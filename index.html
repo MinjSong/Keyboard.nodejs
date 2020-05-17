@@ -91,7 +91,7 @@
         const lettersToPoints = {};
 
         function preload() {
-            font = loadFont('SuisseIntlMono-Thin.otf',function(err, f) {
+            font = loadFont('Manrope-VariableFont_wght.ttf',function(err, f) {
                 if (err) {
                     console.log(err);
                 } else {
@@ -128,11 +128,10 @@
     
         let lastLetter;
         const p5Letters = [];
-        const horizontalMoveSpeed = 900; // larger = slower
-        const horizontalMoveDistance = 7; // large = wider
-        const waviness = 4// larger = more wavey
         const size = 100;
         const spacing = 6;
+
+        const letterWidth = 50;
 
         // p5.js draw
         function draw() {
@@ -179,41 +178,59 @@
             for (i in p5Letters) {
                 const l = p5Letters[i].currentLetter;
                 if (l == '\\s') {
-                    translate(i == 0 ? 0 : size/3.5 * bounds.w, 0);
+                    translate(i == 0 ? 0 : 15*2, 0);
                 } else {
                     const p = lettersToPoints[l].points;
                     const b = lettersToPoints[l].bounds;
-                    const xTranslate = size/3.5 * bounds.w;
-                    const yTranslate = (i * xTranslate) > windowWidth;
-                    translate(i == 0 ? 0 : xTranslate, 0);
-                    drawLetterShape(p, b, p5Letters[i].wobblePressure);
+                    drawLetterShape(l, p, b, p5Letters[i].wobblePressure);
+                    let xTranslate = b.w * 15;
+                    if ('il'.split("").includes(l)) {
+                        xTranslate *= 4;
+                    }
+                    if ('zemowb'.split("").includes(l)) {
+                        xTranslate -= 15;
+                    }
+                    translate(xTranslate, 0);
                 }
             }
 
         }
 
         // p5 letter
-        const drawLetterShape = function(points, bounds, wobblePressure) {
+        const drawLetterShape = function(letter, points, bounds, wobblePressure) {
+
+            const horizontalMoveSpeed = 900; // larger = slower
+            const horizontalMoveDistance = 7; // large = wider
+            let waviness = 4// larger = more wavey
+
+            if (letter == 'i') {
+                waviness = .3;
+            }
+            if (letter == 'l') {
+                waviness = .3;
+            }
+            if (letter == 'j') {
+                waviness = 1;
+            }
+            if (letter == 'r') {
+                waviness = 2;
+            }
+            if (letter == 't') {
+                waviness = 3;
+            }
+
             let from = color(76, 187, 122);
             let to = color(200);
             let c = lerpColor(from, to, wobblePressure/1024*2);
             fill(c);
             stroke(0,200);
             strokeWeight(0.05);
-
-            // let from = color(76, 187, 122,20);
-            // let to = color(200,20);
-            // let c = lerpColor(from, to, wobblePressure/1024*2);
-            // fill(c);
-            // stroke(255,100);
-            // strokeWeight(0.05);
-
             beginShape();
             for (let i = 0; i < points.length; i++) {
                 let p = points[i];
                 let input = map(wobblePressure, 90, 400, 0, 20000);
-                let x = p.x * size / bounds.w + sin((waviness * -p.y / bounds.w) + input / horizontalMoveSpeed) * horizontalMoveDistance;
-                let y = p.y * size / bounds.h + cos((10 * -p.y / bounds.h) + input / 200);
+                let x = p.x * 10 + sin((waviness * -p.y / bounds.w) + input / horizontalMoveSpeed) * horizontalMoveDistance;
+                let y = p.y * 10 + cos((10 * -p.y / bounds.h) + input / 200);
                 vertex(x, y);
             }
             endShape(CLOSE);
