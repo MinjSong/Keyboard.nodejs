@@ -18,7 +18,7 @@ const c = ['\\s', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '?', '\n'];
 const keyboard = a.concat(b,c);
 
 // if below this number then its considered human push
-const pressureThreshold = 380;
+const pressureThreshold = 350;
 
 let sendData = (data) => {
   getKeyPressed(data);
@@ -28,7 +28,6 @@ let getKeyPressed = (data) => {
   const numbers = data.split(' ')[0].split('\t').map(n => parseInt(n));
   const min = Math.min(...numbers);
   const idx = numbers.indexOf(min);
-
   if (min < pressureThreshold) {
     const letter = keyboard[idx];
     io.emit('data', {

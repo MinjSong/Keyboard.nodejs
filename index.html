@@ -3,32 +3,57 @@
 <head>
     <script src="https://cdn.jsdelivr.net/npm/p5@0.10.2/lib/p5.js"></script>
     <style>
+       
         @font-face {
             font-family: "ManropeWeight";
             src: url("Manrope-VariableFont_wght.ttf")
             /* src: url("https://fonts.googleapis.com/css2?family=Manrope&display=swap"); */
         }
         /* @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@200&display=swap"); */
-        body {
-            /* font-family: "IBM Plex Sans Roman", Times; */
-            font-family: 'ManropeWeight';
-            font-size: 10vw;
-            margin: 1%;
+        body{
+            margin-left : 0px;
+            margin-right : 0px;
         }
+        
+        h1 {
+            font-family: 'ManropeWeight';
+            background-color: white;
+            border-bottom: 1px solid rgb(76, 187, 122);
+            height: 20px;
+            letter-spacing : 1px;
+            font-size: 9pt; 
+            color: rgb(76, 187, 122);
+            padding-bottom : 5px;
+            padding-left : 10px;
+            margin-left : 0px;
+            margin-right : opx;
+        }
+
+        h2 {
+            font-family: 'ManropeWeight';
+            margin-left : 0px;
+            margin-right : 0px;
+            margin-top : 30;
+        }
+
         p {
             margin:0;
             padding:0;
         }
         span {
-            float:left;
+            float:left;  
         }
         .cursor {
             border-bottom: 2px solid black;
         }
+
+  
     </style>
 </head>
 
 <body>
+    <h1> CROISSANT </h1>
+    <h2>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // Socket is the library we use to connect this webpage to the server in node js
@@ -54,19 +79,23 @@
             currentLetterElement.addClass('cursor');
         }
 
+
         let points;
         let bounds;
-        let letter = 'm';
+        let letter = '';
         let font;
 
         let wobblePressure = 0;
+        let totalPressure; 
+
+        const lettersToPoints = {};
 
         function preload() {
             font = loadFont('SuisseIntlMono-Thin.otf',function(err, f) {
                 if (err) {
-                console.log(err);
+                    console.log(err);
                 } else {
-                font = f;
+                    font = f;
                 }
             });
         }
@@ -76,46 +105,115 @@
             background(255);
 
             chatElement = createDiv();
-            chatElement.style("width", "100%");
+            chatElement.style("width", "90%");
             chatElement.style("float", "left");
-            chatElement.style("height", "200px")
+            chatElement.style("height", "100px");
+            chatElement.style("display", "none");
             createLetterElement();
 
             createCanvas(windowWidth, windowHeight);
+            // load all letter points and bounds
+            const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+            const fontSize = 10;
+            for (idx in alphabet) {
+                const letter = alphabet[idx];
+                points = font.textToPoints(letter, 0, 0, fontSize, {
+                    sampleFactor: 50,
+                    simplifyThreshold: 0
+                });
+                bounds = font.textBounds(letter, 0, 0, fontSize);
+                lettersToPoints[letter] = {points, bounds};
+            }
         }
+    
+        let lastLetter;
+        const p5Letters = [];
+        const horizontalMoveSpeed = 900; // larger = slower
+        const horizontalMoveDistance = 7; // large = wider
+        const waviness = 4// larger = more wavey
+        const size = 100;
+        const spacing = 6;
 
         // p5.js draw
         function draw() {
 
             background(255);
 
+            // const gridWidth = windowWidth / size - 1;
+            // const gridHeight = windowHeight / size - 1;
+
+            // for (let i = 0; i < gridHeight; i++) {
+            //     push();
+            //     for (let j = 0; j < gridWidth; j++) {
+            //         rect(0, 0, size, size);
+            //         translate(size, 0);
+            //     }
+            //     pop();
+            //     translate(0, size);
+            // }
+
             if (currentLetter == null) {
                 return;
             };
 
-            const fontSize = 10;
-            points = font.textToPoints(currentLetter, 0, 0, fontSize, {
-                sampleFactor: 50,
-                simplifyThreshold: 0
-            });
-            bounds = font.textBounds(currentLetter, 0, 0, fontSize);
+            translate(0, size);
             
-            // background(255);
-            // stroke(0,5);
-            // strokeWeight(0.2);
-            fill(0);
-            translate(width / 2 - bounds.w / 2, height / 2 + bounds.h / 2);
+
+            if (currentLetter != lastLetter) {
+                if (currentLetter == '\b') {
+                    p5Letters.pop();
+                } else {
+                    p5Letters.push({currentLetter, wobblePressure});
+                }
+            } else {
+                const l = p5Letters[p5Letters.length-1];
+                if (l !== undefined) {
+                    p5Letters[p5Letters.length-1].wobblePressure = wobblePressure;
+                }
+            }
+
+            lastLetter = currentLetter;
+
+            let colCount = 0;
+
+            for (i in p5Letters) {
+                const l = p5Letters[i].currentLetter;
+                if (l == '\\s') {
+                    translate(i == 0 ? 0 : size/3.5 * bounds.w, 0);
+                } else {
+                    const p = lettersToPoints[l].points;
+                    const b = lettersToPoints[l].bounds;
+                    const xTranslate = size/3.5 * bounds.w;
+                    const yTranslate = (i * xTranslate) > windowWidth;
+                    translate(i == 0 ? 0 : xTranslate, 0);
+                    drawLetterShape(p, b, p5Letters[i].wobblePressure);
+                }
+            }
+
+        }
+
+        // p5 letter
+        const drawLetterShape = function(points, bounds, wobblePressure) {
+            let from = color(76, 187, 122);
+            let to = color(200);
+            let c = lerpColor(from, to, wobblePressure/1024*2);
+            fill(c);
+            stroke(0,200);
+            strokeWeight(0.05);
+
+            // let from = color(76, 187, 122,20);
+            // let to = color(200,20);
+            // let c = lerpColor(from, to, wobblePressure/1024*2);
+            // fill(c);
+            // stroke(255,100);
+            // strokeWeight(0.05);
+
             beginShape();
             for (let i = 0; i < points.length; i++) {
                 let p = points[i];
-                let horizontalMoveSpeed = 1000; // larger = slower
-                let horizontalMoveDistance = 8; // large = wider
-                let waviness = 5 // larger = more wavey
-                let size = 100;
-                let input = millis();
-                input = map(wobblePressure, 90, 400, 0, 20000);
+                let input = map(wobblePressure, 90, 400, 0, 20000);
                 let x = p.x * size / bounds.w + sin((waviness * -p.y / bounds.w) + input / horizontalMoveSpeed) * horizontalMoveDistance;
-                let y = p.y * size / bounds.h + cos((10 * -p.x / bounds.h) + input / 200);
+                let y = p.y * size / bounds.h + cos((10 * -p.y / bounds.h) + input / 200);
                 vertex(x, y);
             }
             endShape(CLOSE);
@@ -159,8 +257,6 @@
                 // add paragraph element
                 const fontWeight = map(pressure,300, 90, MANROPE_WEIGHT_MIN, MANROPE_WEIGHT_MAX);
 
-                console.log(pressure,fontWeight);
-
                 // add weight to currently typed letter
                 currentLetterElement.style('font-weight', pressure);
                 currentLetterElement.style('font-variation-settings', "'wght' "+fontWeight);
@@ -197,8 +293,6 @@
         
         socket.on('data', (data) => {
 
-            // console.log(data);
-
             // used to flush character to sentence
             flushed = false;
 
@@ -227,7 +321,7 @@
         });
 
     </script>
-
+    </h2>
     <script>
 
 
