@@ -112,8 +112,9 @@
             createLetterElement();
 
             createCanvas(windowWidth, windowHeight);
+
             // load all letter points and bounds
-            const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+            const alphabet = 'abcdefghijklmnopqrstuvwxyz '.split('');
             const fontSize = 10;
             for (idx in alphabet) {
                 const letter = alphabet[idx];
@@ -126,79 +127,119 @@
             }
         }
     
-        let lastLetter;
-        const p5Letters = [];
+        let p5Letters = [];
+        const sentences = [];
         const size = 100;
         const spacing = 6;
-
         const letterWidth = 50;
+        let yOffset = 0;
+
+        setInterval(function() {
+            if (currentLetter == undefined) {
+                return;
+            }
+            // remove NaN from buffer
+            const nonNaNBuffer = inputBuffer[currentLetter].pressure.filter(a => a);
+            // select max
+            const maxOfNonNaNBuffer = nonNaNBuffer.reduce(function(a,b) { return a > b ? a : b });
+            // filter out max
+            const filteredOutMax = nonNaNBuffer.filter(a => nonNaNBuffer.length == 1 || a != maxOfNonNaNBuffer);
+            // get the avg
+            const avg = filteredOutMax.reduce(function(acc, val) { return acc + val; }, 0) / filteredOutMax.length;
+
+            const pressure = avg;
+            wobblePressure = pressure;
+
+            let elapsedTime = (new Date() - last) > interval;
+
+            if (!flushed && elapsedTime) {
+                if (currentLetter == '\n') {
+                    sentences.push(p5Letters);
+                    p5Letters = [];
+                } else if (currentLetter == '\b') {
+                    p5Letters.pop();
+                } else if (currentLetter == '\\s') {
+                    p5Letters.push({"currentLetter":" ", wobblePressure});
+                    p5Letters.push({"currentLetter":"", wobblePressure});
+                } else {
+                    p5Letters.push({"currentLetter":currentLetter, wobblePressure});
+                    p5Letters.push({"currentLetter":"", wobblePressure});
+                }
+                flushed = true;
+            }
+        }, interval);
 
         // p5.js draw
         function draw() {
-
             background(255);
-
-            // const gridWidth = windowWidth / size - 1;
-            // const gridHeight = windowHeight / size - 1;
-
-            // for (let i = 0; i < gridHeight; i++) {
-            //     push();
-            //     for (let j = 0; j < gridWidth; j++) {
-            //         rect(0, 0, size, size);
-            //         translate(size, 0);
-            //     }
-            //     pop();
-            //     translate(0, size);
-            // }
-
-            if (currentLetter == null) {
-                return;
-            };
-
             translate(0, size);
-            
 
-            if (currentLetter != lastLetter) {
-                if (currentLetter == '\b') {
-                    p5Letters.pop();
-                } else {
-                    p5Letters.push({currentLetter, wobblePressure});
-                }
-            } else {
-                const l = p5Letters[p5Letters.length-1];
-                if (l !== undefined) {
-                    p5Letters[p5Letters.length-1].wobblePressure = wobblePressure;
-                }
+            if (p5Letters.length > 0) {
+                p5Letters[p5Letters.length-1].wobblePressure = wobblePressure;
             }
 
-            lastLetter = currentLetter;
+            push();
+            renderSentences(sentences);
+            pop();
 
-            let colCount = 0;
+            translate(0, sentences.length * size);
+            renderLetters(p5Letters, false);
 
-            for (i in p5Letters) {
-                const l = p5Letters[i].currentLetter;
+            if (currentLetter == null || currentLetter == '\n' || currentLetter == '\b' || currentLetter == '\\s') {
+                return;
+            }
+
+            // render current letter
+            if (!flushed) {
+                const p = lettersToPoints[currentLetter].points;
+                const b = lettersToPoints[currentLetter].bounds;
+                push();
+                drawLetterShape(currentLetter, p, b, wobblePressure);
+                pop();
+            }
+        }
+
+        const renderSentences = function(sentences) {
+            for (i in sentences) {
+                const sentence = sentences[i];
+                push();
+                translate(0, i * size);
+                renderLetters(sentence, true);
+                pop();
+            }
+        }
+
+        const renderLetters = function(letters, pushing) {
+            if (pushing) push();
+            for (i in letters) {
+                const l = letters[i].currentLetter;
+                if (l == "") {
+                    continue;
+                }
                 if (l == '\\s') {
                     translate(i == 0 ? 0 : 15*2, 0);
                 } else {
                     const p = lettersToPoints[l].points;
                     const b = lettersToPoints[l].bounds;
-                    drawLetterShape(l, p, b, p5Letters[i].wobblePressure);
+                    drawLetterShape(l, p, b, letters[i].wobblePressure);
                     let xTranslate = b.w * 15;
                     if ('il'.split("").includes(l)) {
                         xTranslate *= 4;
                     }
-                    if ('zemowb'.split("").includes(l)) {
+                    if ('zemowbwcky'.split("").includes(l)) {
                         xTranslate -= 15;
+                    }
+                    if ('w' == l) {
+                        xTranslate -= 20;
                     }
                     translate(xTranslate, 0);
                 }
             }
-
+            if (pushing) pop();
         }
 
         // p5 letter
         const drawLetterShape = function(letter, points, bounds, wobblePressure) {
-
             const horizontalMoveSpeed = 900; // larger = slower
             const horizontalMoveDistance = 7; // large = wider
             let waviness = 4// larger = more wavey
@@ -236,78 +277,6 @@
             endShape(CLOSE);
         }
 
-        const currentLetterInputInterval = setInterval(function() {
-            if (currentLetter in inputBuffer) {
-                // handle backspace
-                if ((new Date() - last) > interval && !flushed && sentenceElements.length > 0 && currentLetter == '\b') {
-                    sentenceElements.pop().remove();
-                    flushed = true;
-                }
-
-                // handle space
-                if (!flushed && currentLetter == '\\s') {
-                    if ((new Date() - last) > interval) {
-                        currentLetterElement.removeClass("cursor");
-                        currentLetterElement.html('&nbsp;');
-                        sentenceElements.push(currentLetterElement);
-                        flushed = true;
-                        createLetterElement();
-                    }
-                    return;
-                }
-
-                // remove NaN from buffer
-                const nonNaNBuffer = inputBuffer[currentLetter].pressure.filter(a => a);
-                // select max
-                const maxOfNonNaNBuffer = nonNaNBuffer.reduce(function(a,b) { return a > b ? a : b });
-                // filter out max
-                const filteredOutMax = nonNaNBuffer.filter(a => nonNaNBuffer.length == 1 || a != maxOfNonNaNBuffer);
-                // get the avg
-                const avg = filteredOutMax.reduce(function(acc, val) { return acc + val; }, 0) / filteredOutMax.length;
-
-                const pressure = avg;
-                wobblePressure = pressure;
-
-                const MANROPE_WEIGHT_MIN = 200;
-                const MANROPE_WEIGHT_MAX = 800;
-
-                // add paragraph element
-                const fontWeight = map(pressure,300, 90, MANROPE_WEIGHT_MIN, MANROPE_WEIGHT_MAX);
-
-                // add weight to currently typed letter
-                currentLetterElement.style('font-weight', pressure);
-                currentLetterElement.style('font-variation-settings', "'wght' "+fontWeight);
-                
-                // if new current letter then set as white space
-                if (!flushed) {
-                    currentLetterElement.html(currentLetter);
-                } else {
-                    currentLetterElement.html('&nbsp;');
-                }
-
-                // decide whether to flush character to sentence
-                let elapsedTime = (new Date() - last) > interval;
-                if (elapsedTime) {
-                    if (!flushed) {
-                        flushed = true;
-                        currentLetterElement.removeClass("cursor");
-                        // add letter to chat window
-                        sentenceElements.push(currentLetterElement);
-                        createLetterElement();
-                    }
-                }
-            }
-        }, interval);
-
-        const cursorInterval = setInterval(function() {
-            if (cursorToggle) {
-                currentLetterElement.addClass("cursor");
-            } else {
-                currentLetterElement.removeClass("cursor");
-            }
-            cursorToggle = !cursorToggle;
-        }, 500);
-        
         socket.on('data', (data) => {
 
             // used to flush character to sentence
