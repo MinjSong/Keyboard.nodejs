@@ -227,7 +227,7 @@
                     p5Letters.push({"currentLetter":" ", wobblePressure, currentColour});
                     p5Letters.push({"currentLetter":"", wobblePressure});
                 } else {
-                    p5Letters.push({"currentLetter":currentLetter, wobblePressure, currentColour});
+                    p5Letters.push({"currentLetter":currentLetter, wobblePressure, currentColour, "opacity": 255});
                     p5Letters.push({"currentLetter":"", wobblePressure});
                 }
                 flushed = true;
@@ -262,7 +262,7 @@
                 const p = lettersToPoints[currentLetter].points;
                 const b = lettersToPoints[currentLetter].bounds;
                 push();
-                drawLetterShape(currentLetter, p, b, wobblePressure);
+                drawLetterShape(currentLetter, p, b, wobblePressure, currentColour, 255);
                 pop();
             }
 
@@ -280,6 +280,7 @@
 
         const renderLetters = function(letters, pushing) {
             if (pushing) push();
+            let lettersToRemove = [];
             for (i in letters) {
                 const l = letters[i].currentLetter;
                 if (l == "") {
@@ -290,7 +291,14 @@
                 } else {
                     const p = lettersToPoints[l].points;
                     const b = lettersToPoints[l].bounds;
-                    drawLetterShape(l, p, b, letters[i].wobblePressure, letters[i].currentColour);
+                    drawLetterShape(l, p, b, letters[i].wobblePressure, letters[i].currentColour, letters[i].opacity);
+                    
+                    // opacity changes to letter
+                    letters[i].opacity -= .5;
+                    if (letters[i].opacity  < 0) {
+                        lettersToRemove.push(i);
+                    }
+
                     let xTranslate = b.w * 15;
                     if ('il'.split("").includes(l)) {
                         xTranslate *= 4;
@@ -304,11 +312,14 @@
                     translate(xTranslate, 0);
                 }
             }
+            // for (i in lettersToRemove) {
+            //     letters.splice(i, 1);
+            // }
             if (pushing) pop();
         }
 
         // p5 letter
-        const drawLetterShape = function(letter, points, bounds, wobblePressure, letterColor) {
+        const drawLetterShape = function(letter, points, bounds, wobblePressure, letterColor, opacity) {
             const horizontalMoveSpeed = 900; // larger = slower
             const horizontalMoveDistance = 7; // large = wider
             let waviness = 4// larger = more wavey
@@ -335,8 +346,11 @@
             // let to = color(200);
             // let c = lerpColor(from, to, wobblePressure/1024*2);
         
-            fill(letterColor || currentColour);
-            stroke(0,200);
+            const c = letterColor || currentColour;
+            c.setAlpha(opacity);
+
+            fill(c);
+            stroke(0,opacity - 55);
             strokeWeight(0.3);
 
             beginShape();
@@ -352,8 +366,6 @@
 
         socket.on('data', (data) => {
 
-            console.log(data.squeezed);
-
             if (data.squeezed) {
                 const min = 10500;
                 let v = ((data.pressure - min)) / (data.totalSqueezeThreshold - min - 1000);
@@ -367,9 +379,7 @@
                 colourSelector = Math.min(Math.max(currentSqueeze, 0), 1);
                 currentColour = lerpColor(from, to, colourSelector);
 
-
-                console.log(data.pressure, data.totalSqueezeThreshold, v);
-
+                // console.log(data.pressure, data.totalSqueezeThreshold, v);
 
                 colourBuffer[colourBufferIdx++ % colourBufferSize] = currentColour;
 

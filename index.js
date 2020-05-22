@@ -35,7 +35,7 @@ let getKeyPressed = (data) => {
   const totalPressuredInputs = numbers.filter(x => x < 400).length
   const letter = keyboard[idx];
 
-  const squeezeCondition = total < totalSqueezeThreshold || totalPressuredInputs > 2;
+  const squeezeCondition = total < totalSqueezeThreshold || totalPressuredInputs > 3;
 
   if (squeezeCondition) {
     io.emit('data', {
