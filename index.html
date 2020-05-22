@@ -11,49 +11,85 @@
         }
         /* @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@200&display=swap"); */
         body{
-            margin-left : 0px;
-            margin-right : 0px;
+            margin: 0;
+            font-family: 'SuisseIntlMono-Thin';
+        }
+
+        #container {
+            width: 100%;
+        }
+
+        .bar {
+            height: 100vh;
+            width: 60px;
+            float: left;
+            font-size: 23pt; 
+            display:flex;
+            align-items:center;
+            writing-mode: vertical-lr;
+            border-left: 1px dashed black;
+            padding-top: 20px;
+            background-color: rgba(255,255,255,0);
+
+        }
+
+        .left {
+            padding-bottom: 25px;
+            width: 60px;
+            display:flex;
+            align-items:center;
+            padding-top: 10px;
+            font-size: 23pt;
+            position: absolute;
+            writing-mode: vertical-lr;
+            transform: rotate(-180deg);
+            color: black;
         }
         
-        h1 {
-            font-family: 'ManropeWeight';
-            background-color: white;
-            border-bottom: 1px solid rgb(76, 187, 122);
-            height: 20px;
-            letter-spacing : 1px;
-            font-size: 9pt; 
-            color: rgb(76, 187, 122);
-            padding-bottom : 5px;
-            padding-left : 10px;
-            margin-left : 0px;
-            margin-right : opx;
-        }
-
-        h2 {
-            font-family: 'ManropeWeight';
-            margin-left : 0px;
-            margin-right : 0px;
-            margin-top : 30;
-        }
-
-        p {
+        .line2 {
+            height: 100vh;
             margin:0;
             padding:0;
-        }
-        span {
-            float:left;  
-        }
-        .cursor {
-            border-bottom: 2px solid black;
+            left: 60px;
+            position: absolute;
+            border-left: 1px dashed black;
+            color: black;
         }
 
-  
+        #center {
+            width: calc(100% - 61px);
+            height: 100vh;
+            float: left;
+        }
+        
+        h2 {
+            position: absolute;
+            letter-spacing : 0px;
+            font-size: 25pt;
+            font-weight: 100;
+            margin-top: 18px;
+            margin-left: 80px;
+        }
+
+
     </style>
 </head>
 
 <body>
-    <h1> CROISSANT </h1>
-    <h2>
+    <div id="container">
+        <div class="left"></div>
+        <div class="line2"></div>
+        <div id="center">
+            <h2>A CROISSANT SAYS,</h2>
+        </div>
+        <div class="bar">
+            (BRIGHTON)    (UK)
+        </div>
+    </div>
+
+
+
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // Socket is the library we use to connect this webpage to the server in node js
@@ -72,13 +108,29 @@
         let chatElement; // html element that holds letters
         let currentLetterElement; // html element for currently selected letter
 
+        let currentColour;
+        let from;
+        let to;
+
+        const colourBufferSize = 10;
+        let colourBufferIdx = 0;
+        const colourBuffer = new Array(colourBufferSize);
+        let colourSelector = .5;
+
+        const squeezeBufferSize = 10;
+        const squeezeBuffer = new Array(squeezeBufferSize);
+        let squeezeBufferIdx = 0;
+        let currentSqueeze = 0;
+
+        const colourBarHeight = 10; // the colour bar with indicator showing squeezed color
+        const colourBarWidth = 61;
+
         function createLetterElement() {
             currentLetterElement = createSpan('');
             currentLetterElement.parent(chatElement);
             currentLetterElement.style('color', '#ff0000');
             currentLetterElement.addClass('cursor');
         }
-
 
         let points;
         let bounds;
@@ -111,11 +163,14 @@
             chatElement.style("display", "none");
             createLetterElement();
 
-            createCanvas(windowWidth, windowHeight);
+            const w = document.getElementById("center").offsetWidth;
+            const canvas = createCanvas(w, windowHeight);
+            canvas.parent("center")
 
             // load all letter points and bounds
-            const alphabet = 'abcdefghijklmnopqrstuvwxyz '.split('');
-            const fontSize = 10;
+            const alphabet = 'abcdefghijklmnopqrstuvwxyz ?'.split('');
+            const fontSize = 16;
+
             for (idx in alphabet) {
                 const letter = alphabet[idx];
                 points = font.textToPoints(letter, 0, 0, fontSize, {
@@ -125,14 +180,24 @@
                 bounds = font.textBounds(letter, 0, 0, fontSize);
                 lettersToPoints[letter] = {points, bounds};
             }
+
+            // random letter colours from/to
+            from = color(random(10,140),random(10,140),random(10,140));
+            to = color(random(160,255),random(160,255),random(160,255));
+            if (lerpColor) {
+                currentColour = lerpColor(from, to, colourSelector); // initial colour is in middle of from/to
+            }
+     
+            select(".left").html(new Date().toLocaleDateString().replace(/\//g,"-") + " " + new Date().toLocaleTimeString().replace(/:/g,"-").slice(0, -3));
+
         }
     
         let p5Letters = [];
         const sentences = [];
-        const size = 100;
+        const size = 150;
         const spacing = 6;
-        const letterWidth = 50;
-        let yOffset = 0;
+        const letterWidth = 40;
+        let yOffset = 5;
 
         setInterval(function() {
             if (currentLetter == undefined) {
@@ -159,10 +224,10 @@
                 } else if (currentLetter == '\b') {
                     p5Letters.pop();
                 } else if (currentLetter == '\\s') {
-                    p5Letters.push({"currentLetter":" ", wobblePressure});
+                    p5Letters.push({"currentLetter":" ", wobblePressure, currentColour});
                     p5Letters.push({"currentLetter":"", wobblePressure});
                 } else {
-                    p5Letters.push({"currentLetter":currentLetter, wobblePressure});
+                    p5Letters.push({"currentLetter":currentLetter, wobblePressure, currentColour});
                     p5Letters.push({"currentLetter":"", wobblePressure});
                 }
                 flushed = true;
@@ -172,7 +237,10 @@
         // p5.js draw
         function draw() {
             background(255);
-            translate(0, size);
+            drawBar(0, 0, colourBarWidth, height, from, to);
+
+            // return;
+            translate(70, 60 + size);
 
             if (p5Letters.length > 0) {
                 p5Letters[p5Letters.length-1].wobblePressure = wobblePressure;
@@ -197,6 +265,7 @@
                 drawLetterShape(currentLetter, p, b, wobblePressure);
                 pop();
             }
+
         }
 
         const renderSentences = function(sentences) {
@@ -221,7 +290,7 @@
                 } else {
                     const p = lettersToPoints[l].points;
                     const b = lettersToPoints[l].bounds;
-                    drawLetterShape(l, p, b, letters[i].wobblePressure);
+                    drawLetterShape(l, p, b, letters[i].wobblePressure, letters[i].currentColour);
                     let xTranslate = b.w * 15;
                     if ('il'.split("").includes(l)) {
                         xTranslate *= 4;
@@ -239,7 +308,7 @@
         }
 
         // p5 letter
-        const drawLetterShape = function(letter, points, bounds, wobblePressure) {
+        const drawLetterShape = function(letter, points, bounds, wobblePressure, letterColor) {
             const horizontalMoveSpeed = 900; // larger = slower
             const horizontalMoveDistance = 7; // large = wider
             let waviness = 4// larger = more wavey
@@ -259,13 +328,17 @@
             if (letter == 't') {
                 waviness = 3;
             }
-
-            let from = color(76, 187, 122);
-            let to = color(200);
-            let c = lerpColor(from, to, wobblePressure/1024*2);
-            fill(c);
+            if (letter == 'm') {
+                waviness = 6;
+            }
+            // let from = color(76, 187, 122);
+            // let to = color(200);
+            // let c = lerpColor(from, to, wobblePressure/1024*2);
+        
+            fill(letterColor || currentColour);
             stroke(0,200);
-            strokeWeight(0.05);
+            strokeWeight(0.3);
+
             beginShape();
             for (let i = 0; i < points.length; i++) {
                 let p = points[i];
@@ -278,6 +351,37 @@
         }
 
         socket.on('data', (data) => {
+
+            console.log(data.squeezed);
+
+            if (data.squeezed) {
+                const min = 10500;
+                let v = ((data.pressure - min)) / (data.totalSqueezeThreshold - min - 1000);
+                
+                v = Math.min(Math.max(v, 0), 1); // clamped
+
+                squeezeBuffer[squeezeBufferIdx++ % squeezeBufferSize] = v;
+                currentSqueeze = squeezeBuffer.reduce(((a, b) => a + b)) / squeezeBuffer.length;
+
+                //colour buffer selection 
+                colourSelector = Math.min(Math.max(currentSqueeze, 0), 1);
+                currentColour = lerpColor(from, to, colourSelector);
+
+
+                console.log(data.pressure, data.totalSqueezeThreshold, v);
+
+
+                colourBuffer[colourBufferIdx++ % colourBufferSize] = currentColour;
+
+                const colours = colourBuffer.filter((item) => item).map(((colour) => colour.levels));
+                var sum = (r, a) => r.map((b, i) => a[i] + b);
+                const totals = colours.reduce(sum).map(v => v/colourBufferSize);
+                currentColour = currentColour; // color(totals[0], totals[1], totals[2]);
+                
+                currentLetter.letter = "";
+
+                return;
+            }
 
             // used to flush character to sentence
             flushed = false;
@@ -306,10 +410,30 @@
             inputBuffer[data.letter].pressure[inputBuffer[data.letter].index] = data.pressure;
         });
 
-    </script>
-    </h2>
-    <script>
 
+        function drawBar(x, y, w, h, c1, c2) {
+            const selected = colourSelector.toFixed(2);
+            strokeWeight(1);
+            noFill();
+            let ellispseP = 0;
+            for (let i = y; i <= y + h; i++) {
+                let inter = map(h - i, y, y + h, 0, 1);
+                let c = lerpColor(c1, c2, inter);
+                stroke(c);
+                line(x, i, x + w, i);
+                // moving color selector
+                if (inter.toFixed(2) == selected) {
+                    stroke(255);
+                    // line(x, i, x + w, i);
+                    ellispseP = i;
+                }
+            }
+            stroke(0);
+            fill(0, 30);
+            ellipse(w/2, ellispseP - w/8, w, w);
 
+        
+
+        }     
     </script>
 </body>

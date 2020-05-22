@@ -17,6 +17,9 @@ const b = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', '\b'];
 const c = ['\\s', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '?', '\n'];
 const keyboard = a.concat(b,c);
 
+const totalSqueezeThreshold = 15000;
+let lastSqueezed = new Date();
+
 // if below this number then its considered human push
 const pressureThreshold = 350;
 
@@ -28,13 +31,28 @@ let getKeyPressed = (data) => {
   const numbers = data.split(' ')[0].split('\t').map(n => parseInt(n));
   const min = Math.min(...numbers);
   const idx = numbers.indexOf(min);
-  if (min < pressureThreshold) {
-    const letter = keyboard[idx];
+  const total = numbers.reduce((a,b) => a+ b)
+  const totalPressuredInputs = numbers.filter(x => x < 400).length
+  const letter = keyboard[idx];
+
+  const squeezeCondition = total < totalSqueezeThreshold || totalPressuredInputs > 2;
+
+  if (squeezeCondition) {
     io.emit('data', {
-      "letter": letter,
+      "squeezed": true,
+      "pressure": total,
+      letter,
+      totalSqueezeThreshold
+    });
+    lastSqueezed = new Date();
+  } else if (totalPressuredInputs >= 1 && (new Date() - lastSqueezed) > 500 && min < pressureThreshold) {
+    io.emit('data', {
+      "squeezed": false,
+      letter,
       "pressure": numbers[idx]
     });
   }
+
 }
 
 parser.on('data', line => {
