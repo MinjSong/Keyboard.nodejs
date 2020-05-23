@@ -198,6 +198,7 @@
         const spacing = 6;
         const letterWidth = 40;
         let yOffset = 5;
+        const opacitySpeed = 1; // higher = faster fade out
 
         setInterval(function() {
             if (currentLetter == undefined) {
@@ -294,7 +295,7 @@
                     drawLetterShape(l, p, b, letters[i].wobblePressure, letters[i].currentColour, letters[i].opacity);
                     
                     // opacity changes to letter
-                    letters[i].opacity -= .5;
+                    letters[i].opacity -= opacitySpeed;
                     if (letters[i].opacity  < 0) {
                         lettersToRemove.push(i);
                     }
