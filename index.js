@@ -40,14 +40,22 @@ let getKeyPressed = (data) => {
   const totalPressuredInputs = numbers.filter(x => x < 400).length
   const letter = keyboard[idx];
 
-  const squeezeCondition = total < totalSqueezeThreshold || totalPressuredInputs > 3;
+  const totalPressedMax = 10;
+
+  const squeezeCondition = total < totalSqueezeThreshold || totalPressuredInputs > totalPressedMax;
   const letterPressCondition = totalPressuredInputs >= 1 && (new Date() - lastSqueezed) > 500 && min < pressureThreshold;
+  const letterCond = buffer.reduce((a,b) => a && b, true) && totalPressuredInputs <= totalPressedMax && min < pressureThreshold;
 
-  // console.log(squeezeCondition, letterPressCondition, lastSqueeze);
+  console.log(squeezeCondition, letterCond, totalPressuredInputs);
 
-  const letterCond = buffer.reduce((a,b) => a && b, true) && totalPressuredInputs >= 1 && (new Date() - lastSqueezed) > 500 && min < pressureThreshold;
-
-  if (squeezeCondition) {
+  if (letterCond) {
+    console.log('letter', letter);
+    io.emit('data', {
+      "squeezed": false,
+      letter,
+      "pressure": numbers[idx]
+    });
+  } else if (squeezeCondition) {
     io.emit('data', {
       "squeezed": true,
       "pressure": total,
@@ -55,13 +63,6 @@ let getKeyPressed = (data) => {
       totalSqueezeThreshold
     });
     lastSqueezed = new Date();
-  } else if (letterCond) {
-    console.log('letter', letter);
-    io.emit('data', {
-      "squeezed": false,
-      letter,
-      "pressure": numbers[idx]
-    });
   }
 
   buffer[i++ % bufferSize] = letterPressCondition;

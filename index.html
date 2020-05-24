@@ -65,7 +65,7 @@
         h2 {
             position: absolute;
             letter-spacing : 0px;
-            font-size: 25pt;
+            font-size: 36pt;
             font-weight: 100;
             margin-top: 18px;
             margin-left: 80px;
@@ -80,10 +80,10 @@
         <div class="left"></div>
         <div class="line2"></div>
         <div id="center">
-            <h2>A CROISSANT SAYS,</h2>
+            <h2>A CROISSANT: </h2>
         </div>
         <div class="bar">
-            (BRIGHTON)    (UK)
+            Touch / Squeeze / Tickle / Hug / Lean on / Rest on / ...
         </div>
     </div>
 
@@ -169,7 +169,7 @@
 
             // load all letter points and bounds
             const alphabet = 'abcdefghijklmnopqrstuvwxyz ?'.split('');
-            const fontSize = 16;
+            const fontSize = 20;
 
             for (idx in alphabet) {
                 const letter = alphabet[idx];
@@ -194,11 +194,11 @@
     
         let p5Letters = [];
         const sentences = [];
-        const size = 150;
+        const size = 170;
         const spacing = 6;
         const letterWidth = 40;
-        let yOffset = 5;
-        const opacitySpeed = 1; // higher = faster fade out
+        let yOffset = 15;
+        const opacitySpeed = 0.2; // higher = faster fade out
 
         setInterval(function() {
             if (currentLetter == undefined) {
