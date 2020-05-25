@@ -45,10 +45,11 @@ let getKeyPressed = (data) => {
   const squeezeCondition = total < totalSqueezeThreshold || totalPressuredInputs > totalPressedMax;
   const letterPressCondition = totalPressuredInputs >= 1 && (new Date() - lastSqueezed) > 500 && min < pressureThreshold;
   const letterCond = buffer.reduce((a,b) => a && b, true) && totalPressuredInputs <= totalPressedMax && min < pressureThreshold;
+  const backspace = letter == '\b' && totalPressuredInputs >= 1;
 
-  console.log(squeezeCondition, letterCond, totalPressuredInputs);
+  console.log(squeezeCondition, letterCond, totalPressuredInputs, backspace);
 
-  if (letterCond) {
+  if (letterCond || backspace) {
     console.log('letter', letter);
     io.emit('data', {
       "squeezed": false,

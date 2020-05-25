@@ -196,8 +196,10 @@
             currentLetterElement.addClass('cursor');
         }
 
-        setInterval(function() {
-            if (currentLetter == undefined) {
+        let backSpaceLast = new Date();
+
+        function handleLetter() {
+            if (currentLetter == undefined || inputBuffer[currentLetter] == undefined) {
                 return;
             }
             // remove NaN from buffer
@@ -213,8 +215,16 @@
             wobblePressure = pressure;
 
             let elapsedTime = (new Date() - last) > interval;
+            const isBackspace = currentLetter == '\b';
+            let backSpaceElapsed = (new Date() - backSpaceLast) > 500;
 
-            if (!flushed && elapsedTime) {
+            if (isBackspace && backSpaceElapsed) {
+                p5Letters.pop();
+                backSpaceLast = new Date();
+                currentLetter = undefined;
+            }
+
+            else if (!flushed && elapsedTime) {
                 if (currentLetter == '\n') {
                     sentences.push(p5Letters);
                     p5Letters = [];
@@ -229,7 +239,7 @@
                 }
                 flushed = true;
             }
-        }, interval);
+        }
 
         function windowResized() {
             const width = document.getElementById("center").offsetWidth;
@@ -238,6 +248,8 @@
 
         // p5.js draw
         function draw() {
+            handleLetter();
+
             background(255);
             drawBar(0, 0, colourBarWidth, height, from, to);
 
