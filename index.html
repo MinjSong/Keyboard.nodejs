@@ -87,9 +87,6 @@
         </div>
     </div>
 
-
-
-
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // Socket is the library we use to connect this webpage to the server in node js
@@ -125,13 +122,6 @@
         const colourBarHeight = 10; // the colour bar with indicator showing squeezed color
         const colourBarWidth = 61;
 
-        function createLetterElement() {
-            currentLetterElement = createSpan('');
-            currentLetterElement.parent(chatElement);
-            currentLetterElement.style('color', '#ff0000');
-            currentLetterElement.addClass('cursor');
-        }
-
         let points;
         let bounds;
         let letter = '';
@@ -141,6 +131,14 @@
         let totalPressure; 
 
         const lettersToPoints = {};
+    
+        let p5Letters = [];
+        const sentences = [];
+        const size = 170;
+        const spacing = 6;
+        const letterWidth = 40;
+        let yOffset = 15;
+        const opacitySpeed = 0.2; // higher = faster fade out
 
         function preload() {
             font = loadFont('Manrope-VariableFont_wght.ttf',function(err, f) {
@@ -189,16 +187,14 @@
             }
      
             select(".left").html(new Date().toLocaleDateString().replace(/\//g,"-") + " " + new Date().toLocaleTimeString().replace(/:/g,"-").slice(0, -3));
-
         }
-    
-        let p5Letters = [];
-        const sentences = [];
-        const size = 170;
-        const spacing = 6;
-        const letterWidth = 40;
-        let yOffset = 15;
-        const opacitySpeed = 0.2; // higher = faster fade out
+
+        function createLetterElement() {
+            currentLetterElement = createSpan('');
+            currentLetterElement.parent(chatElement);
+            currentLetterElement.style('color', '#ff0000');
+            currentLetterElement.addClass('cursor');
+        }
 
         setInterval(function() {
             if (currentLetter == undefined) {
@@ -235,17 +231,21 @@
             }
         }, interval);
 
+        function windowResized() {
+            const width = document.getElementById("center").offsetWidth;
+            resizeCanvas(width, windowHeight);
+        }
+
         // p5.js draw
         function draw() {
             background(255);
             drawBar(0, 0, colourBarWidth, height, from, to);
 
-            // return;
-            translate(70, 60 + size);
-
             if (p5Letters.length > 0) {
                 p5Letters[p5Letters.length-1].wobblePressure = wobblePressure;
             }
+
+            translate(70, 240); // initial translation before any of the letters are rendered
 
             push();
             renderSentences(sentences);
@@ -380,7 +380,7 @@
                 colourSelector = Math.min(Math.max(currentSqueeze, 0), 1);
                 currentColour = lerpColor(from, to, colourSelector);
 
-                // console.log(data.pressure, data.totalSqueezeThreshold, v);
+                console.log(data.pressure, data.totalSqueezeThreshold, v);
 
                 colourBuffer[colourBufferIdx++ % colourBufferSize] = currentColour;
 
@@ -442,9 +442,6 @@
             stroke(0);
             fill(0, 30);
             ellipse(w/2, ellispseP - w/8, w, w);
-
-        
-
         }     
     </script>
 </body>
