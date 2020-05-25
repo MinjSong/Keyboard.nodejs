@@ -47,7 +47,7 @@ let getKeyPressed = (data) => {
   const letterCond = buffer.reduce((a,b) => a && b, true) && totalPressuredInputs <= totalPressedMax && min < pressureThreshold;
   const backspace = letter == '\b' && totalPressuredInputs >= 1;
 
-  console.log(squeezeCondition, letterCond, totalPressuredInputs, backspace);
+  // console.log(squeezeCondition, letterCond, totalPressuredInputs, backspace);
 
   if (letterCond || backspace) {
     console.log('letter', letter);
